@@ -7,7 +7,6 @@ const outputOrder = require('../output/orderOutput');
 const userProfileOutput = require('../output/userProfileOutput');
 
 const logger = require('../service/logService');
-const authenticator = require('../controller/security/authenticator');
 const jwt = require('jsonwebtoken');
 const {user} = require("../database/database.properties");
 
@@ -142,7 +141,6 @@ async function removeDeviceToken(req, res) {
 }
 
 module.exports = function (app) {
-    //app.use('/user', authenticator.apiAuthenticateJWT);
     app.post('/security/user/update', updateUser);
     app.get('/security/user/getProfile', getUser);
     app.get('/security/user/getProfileEditing', getUserEditing);

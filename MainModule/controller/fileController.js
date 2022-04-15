@@ -1,12 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 
-const userRepository = require('../repository/userRepository');
 const fileRepository = require('../repository/fileRepository');
-const orderRepository = require('../repository/orderRepository');
-const authenticator = require('../controller/security/authenticator');
 const logger = require('../service/logService');
-
-//const fileFilter = (req, file, cb) => {}
 
 
 const multer = require('multer');
@@ -111,7 +106,6 @@ async function getMetaData(req, res) {
 
 module.exports = function(app) {
     app.get('/file/test', getMetaData);
-    //app.use('/image', authenticator.apiAuthenticateJWT);
     app.get('/image/:fileName', getPhoto);
     app.get('/image/delete/:fileName', deletePhoto);
     app.post('/image/upload', upload.single("fileData"), addPhoto);

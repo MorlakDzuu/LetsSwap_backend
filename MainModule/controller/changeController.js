@@ -87,7 +87,6 @@ async function cancelChange(req, res) {
 }
 
 module.exports = function (app) {
-    //app.use('/change', authenticator.apiAuthenticateJWT);
     app.post('/security/change/addChange', addChange);
     app.post('/security/change/confirm', confirmChange);
     app.get('/security/change/getNotifications', getNotifications);

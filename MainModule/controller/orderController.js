@@ -7,7 +7,6 @@ const fileService = require('../service/fileService');
 const orderOutput = require('../output/orderOutput');
 
 const logger = require('../service/logService');
-const authenticator = require('../controller/security/authenticator');
 const jwt = require('jsonwebtoken');
 const fileRepository = require("../repository/fileRepository");
 
@@ -237,7 +236,6 @@ async function search(req, res) {
 }
 
 module.exports = function (app) {
-    //app.use('/order', authenticator.apiAuthenticateJWT);
     app.post('/security/order/makeNew', addOrder);
     app.post('/security/order/addTag', addTag);
     app.get('/security/order/:orderId', getOrder);
