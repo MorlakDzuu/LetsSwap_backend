@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import com.corundumstudio.socketio.Configuration;
 
 @SpringBootApplication
-public class DemoApplication {
+public class Application {
 
 	@Value("${hostname}")
 	private String host;
@@ -25,6 +25,6 @@ public class DemoApplication {
 	}
 
 	public static void main(String[] args) {
-		SpringApplication.run(DemoApplication.class, args);
+		SpringApplication.run(Application.class, args);
 	}
 }
