@@ -1,0 +1,7 @@
+[ year: 2021, month: 0, day: 0NaN15, minutes: 18, seconds: 54 ]Error: connect ECONNREFUSED 127.0.0.1:5432[year: 2021, month: 0, day: 0NaN15, minutes: 21, seconds: 31] Error: connect ECONNREFUSED 127.0.0.1:5432[year: 2021, month: 0, day: 0NaN15, minutes: 22, seconds: 6] Error: connect ECONNREFUSED 127.0.0.1:5432
+[year: 2021, month: 0, day: 0NaN15, minutes: 22, seconds: 6] Error: connect ECONNREFUSED 127.0.0.1:5432
+[year: 2021, month: 0, day: 0NaN15, minutes: 22, seconds: 19] Error: connect ECONNREFUSED 127.0.0.1:5432
+[year: 2021, month: Sun Jan 31 2021, day: 0NaN15, minutes: 24, seconds: 26] Error: connect ECONNREFUSED 127.0.0.1:5432
+[year: 2021, month: Sun Jan 31 2021, day: 0NaN15, minutes: 24, seconds: 26] Error: connect ECONNREFUSED 127.0.0.1:5432
+[date: Sat Jul 24 2021, hours: 0, minutes: 12, seconds: 30] error: duplicate key value violates unique constraint "messages_id_string_key"
+[date: Sat Jul 24 2021, hours: 0, minutes: 12, seconds: 55] error: duplicate key value violates unique constraint "messages_id_string_key"
