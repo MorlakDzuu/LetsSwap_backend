@@ -1,11 +1,9 @@
 const changeRepository = require('../repository/changeRepository');
 const orderRepository = require('../repository/orderRepository');
-const authenticator = require('../controller/security/authenticator');
 const changeOutput = require('../output/changeOutput');
 const logger = require('../service/logService');
 const pushService = require('../service/pushService');
 const jwt = require('jsonwebtoken');
-const socket = require('../socket/socket');
 
 async function addChange(req, res) {
     try {
