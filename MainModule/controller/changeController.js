@@ -1,18 +1,14 @@
 const changeRepository = require('../repository/changeRepository');
-const orderRepository = require('../repository/orderRepository');
-const changeOutput = require('../output/changeOutput');
 const logger = require('../service/logService');
-const pushService = require('../service/pushService');
+const changeService = require('../service/changeService');
+const Deal = require('../domain/Deal');
 const jwt = require('jsonwebtoken');
 
 async function addChange(req, res) {
     try {
         let userId = jwt.decode(req.headers.authorization).id;
-        let changeId = await changeRepository.addDeal(req.body, userId);
-        let order = await orderRepository.getOrderById(req.body.orderId);
-        let data = await changeOutput.getChangeOutput(changeId);
-        await pushService.sendPushNotification(order.user_id, userId, "хочет с вами махнуться");
-        await socket.sendNotificationData("serverNotifications", data, order.user_id);
+        let deal = new Deal(0, req.body, userId, req.body.orderId, req.body.comment, "new");
+        await changeService.addChange(deal);
         res.json({message: "success"});
     } catch (err) {
         logger.log(err);
@@ -22,18 +18,10 @@ async function addChange(req, res) {
 }
 
 async function confirmChange(req, res) {
-    let dealId = req.body.changeId;
-    let userId = jwt.decode(req.headers.authorization).id;
     try {
-        let isItMyOrder = await changeRepository.isItUserDeal(dealId, userId);
-        if (isItMyOrder) {
-            await changeRepository.confirmDeal(dealId);
-        }
-        let changeEntity = await changeRepository.getDealById(dealId);
-        let orderEntity = await  orderRepository.getOrderById(changeEntity.order_id);
-        console.log(changeEntity.user_id);
-        console.log(orderEntity.user_id);
-        await pushService.sendPushNotification(changeEntity.user_id, orderEntity.user_id, "подтвердил обмен!")
+        let dealId = req.body.changeId;
+        let userId = jwt.decode(req.headers.authorization).id;
+        await changeService.confirmChange(dealId, userId);
         res.json({changeStatus: "confirmed"});
     } catch (err) {
         logger.log(err);
@@ -55,9 +43,9 @@ async function canAddChange(req, res) {
 }
 
 async function getNotifications(req, res) {
-    let id = jwt.decode(req.headers.authorization).id;
     try {
-        let data = await changeOutput.getChangeOutputArray(id);
+        let userId = jwt.decode(req.headers.authorization).id;
+        let data = await changeService.getChangeOutputArray(userId);
         res.json(data);
     } catch (err) {
         logger.log(err);
@@ -67,15 +55,10 @@ async function getNotifications(req, res) {
 }
 
 async function cancelChange(req, res) {
-    let dealId = req.body.changeId;
     try {
+        let dealId = req.body.changeId;
         let userId = jwt.decode(req.headers.authorization).id;
-        let changeInfo = await changeRepository.getDealById(dealId);
-        await changeRepository.deleteChange(dealId);
-        await pushService.sendPushNotification(changeInfo.user_id, userId, "отклонил обмен");
-        socket.sendNotificationData({
-            message: "swap canceled"
-        }, changeInfo.user_id, 'swapCancel');
+        await changeService.cancelChange(dealId, userId);
         res.json({message: "success"});
     } catch (error) {
         logger.log(error);

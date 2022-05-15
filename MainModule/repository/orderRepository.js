@@ -1,11 +1,11 @@
 const database = require('../database/database');
 const tagRepository = require('../repository/tagRepository');
+const Order = require('../domain/Order');
 
-async function addOrder(userId, order) {
-    let isHidden = false;
+async function addOrder(order) {
     let data = await database.db.one('INSERT INTO orders (user_id, title, description, is_free, is_hidden, counter_offer, date) ' +
-        'VALUES ($1, $2, $3, $4, $5, $6, (NOW())::TIMESTAMP) RETURNING id', [userId, order.title, order.description,
-        order.isFree, isHidden, order.counterOffer]);
+        'VALUES ($1, $2, $3, $4, $5, $6, (NOW())::TIMESTAMP) RETURNING id', [order.userId, order.title, order.description,
+        order.isFree, order.isHidden, order.counterOffer]);
     return data.id;
 }
 
@@ -16,7 +16,9 @@ async function getAllOrdersByUserId(userId) {
 
 async function getOrderById(id) {
     const order = await database.db.one('SELECT * FROM orders WHERE id = $1', [id]);
-    return order;
+    let orderEntity = new Order(order.id, order.user_id, order.title, order.description,
+        order.counter_offer, order.is_free, order.is_hidden, order.photo_data, order.date);
+    return orderEntity;
 }
 
 async function addPhotoToOrder(orderId, photoId) {
@@ -47,9 +49,9 @@ async function deleteOrder(orderId) {
     await database.db.none('DELETE FROM orders WHERE id = $1', [orderId]);
 }
 
-async function updateOrder(orderId, order) {
+async function updateOrder(order) {
     await database.db.none('UPDATE orders SET title = $1, description = $2, is_free = $3, counter_offer = $4 ' +
-        'WHERE id = $5', [order.title, order.description, order.isFree, order.counterOffer, orderId]);
+        'WHERE id = $5', [order.title, order.description, order.isFree, order.counterOffer, order.id]);
 }
 
 async function updateOrderPhotos(orderId, photoIds) {

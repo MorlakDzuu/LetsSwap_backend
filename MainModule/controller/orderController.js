@@ -1,30 +1,16 @@
-const orderRepository = require('../repository/orderRepository');
 const tagRepository = require('../repository/tagRepository');
-const favoriteRepository = require('../repository/favoriteRepository');
-const userRepository = require('../repository/userRepository');
-
-const fileService = require('../service/fileService');
-const orderOutput = require('../output/orderOutput');
+const orderService = require('../service/orderService');
 
 const logger = require('../service/logService');
 const jwt = require('jsonwebtoken');
-const fileRepository = require("../repository/fileRepository");
+const Order = require("../domain/Order");
 
 async function addOrder(req, res) {
-    let userId = jwt.decode(req.headers.authorization).id;
     try {
-        let orderId = await orderRepository.addOrder(userId, req.body);
-        let tags = req.body.tags;
-        for (let i = 0; i < tags.length; i++) {
-            let tagData = await tagRepository.getTagByName(tags[i]);
-            await tagRepository.addTagToOrder(orderId, tagData.id);
-        }
-        let photoUrls = req.body.urls;
-        if (photoUrls) {
-            for(let i = 0; i < photoUrls.length; i++) {
-                await fileService.addPhotoToOrder(photoUrls[i], orderId);
-            }
-        }
+        let userId = jwt.decode(req.headers.authorization).id;
+        let order = new Order(0, userId, req.body.title, req.body.description, req.body.counterOffer,
+            req.body.isFree, false, null, null);
+        await orderService.addOrder(order, req.body.tags, req.body.urls);
         res.json({message: 'success'});
     } catch (err) {
         logger.log(err);
@@ -34,29 +20,10 @@ async function addOrder(req, res) {
 }
 
 async function getOrder(req, res) {
-    let orderId = req.params.orderId;
-    let order;
     try {
-        order = await orderRepository.getOrderById(orderId);
-    } catch (err) {
-        logger.log(err);
-        res.status(500);
-        res.json({message: "can't find this order"});
-        return;
-    }
-    try {
-        let photoUrls = await fileService.getOrderUrls(orderId);
-        let tags = await tagRepository.getTagsByOrderId(orderId);
-        res.json({
-            orderId: order.id,
-            title: order.title,
-            description: order.description,
-            counterOffer: order.counter_offer,
-            isFree: order.is_free,
-            tags: tags,
-            photoAttachments: photoUrls,
-            isHidden: order.is_hidden
-        });
+        let orderId = req.params.orderId;
+        let orderDto = await orderService.getOrderDto(orderId);
+        res.json(orderDto);
     } catch (err) {
         logger.log(err);
         res.status(500);
@@ -76,15 +43,10 @@ async function addTag(req, res) {
 }
 
 async function changeHidden(req, res) {
-    let orderId = req.params.orderId;
     try {
-        let isHidden = await orderRepository.isOrderHidden(orderId);
-        if (isHidden) {
-            await orderRepository.setIsHidden(orderId, false);
-        } else {
-            await orderRepository.setIsHidden(orderId, true);
-        }
-        res.json({newState: !isHidden});
+        let orderId = req.params.orderId;
+        let newState = await orderService.changeOrderHiddenParam(orderId);
+        res.json({newState: newState});
     } catch (err) {
         logger.log(err);
         res.status(500);
@@ -93,17 +55,9 @@ async function changeHidden(req, res) {
 }
 
 async function deleteOrder(req, res) {
-    let orderId = req.params.orderId;
     try {
-        let photoUrls = await fileService.getOrderUrls(orderId);
-        if (photoUrls) {
-            for (let i = 0; i < photoUrls.length; i++) {
-                await fileService.deletePhoto(photoUrls[i]);
-                console.log('deleted file ' + photoUrls[i]);
-            }
-        }
-        await tagRepository.deleteTagToOrderByOrderId(orderId);
-        await orderRepository.deleteOrder(orderId);
+        let orderId = req.params.orderId;
+        await orderService.deleteOrder(orderId);
         res.json({message: "success"});
     } catch (err) {
         logger.log(err);
@@ -114,10 +68,9 @@ async function deleteOrder(req, res) {
 
 async function updateOrder(req, res) {
     try {
-        let orderId = req.params.orderId;
-        await orderRepository.updateOrder(orderId, req.body);
-        await tagRepository.updateOrderTags(orderId, req.body.tags);
-        await fileService.updateOrderPhotos(orderId, req.body.urls);
+        let order = new Order(req.params.orderId, null, req.body.title, req.body.description, req.body.counterOffer,
+            req.body.isFree, null, null, null);
+        await orderService.updateOrder(order);
         res.json({message: "success"});
     } catch (err) {
         logger.log(err);
@@ -129,18 +82,8 @@ async function updateOrder(req, res) {
 async function getOrdersFeed(req, res) {
     try {
         let userId = jwt.decode(req.headers.authorization).id;
-        let user = await userRepository.getUserById(userId);
-        let orders = await orderRepository.getAllOrdersForUser(userId, user.city);
-        let ordersFeed = [];
-        for (let item of orders) {
-            let order = await orderOutput.getOrderFeedOutput(userId, item);
-            ordersFeed.push(order);
-        }
-        res.json({
-            items: ordersFeed,
-            city: user.city,
-            nextFrom: ""
-        });
+        let ordersFeedDto = await orderService.getOrdersFeedDto(userId);
+        res.json(ordersFeedDto);
     } catch (err) {
         logger.log(err);
         res.status(500);
@@ -149,10 +92,10 @@ async function getOrdersFeed(req, res) {
 }
 
 async function getOrderFeed(req, res) {
-    let orderId = req.params.orderId;
     try {
-        let orderInfo = await orderOutput.getOrderFeedModelOutput(orderId);
-        res.json(orderInfo);
+        let orderId = req.params.orderId;
+        let orderFeedModelDto = await orderService.getOrderFeedModelDto(orderId);
+        res.json(orderFeedModelDto);
     } catch (err) {
         logger.log(err);
         res.status(500);
@@ -161,12 +104,11 @@ async function getOrderFeed(req, res) {
 }
 
 async function addFavorite(req, res) {
-    let orderId = req.params.orderId;
-    let userId = jwt.decode(req.headers.authorization).id;
     try {
-        let order = await orderRepository.getOrderById(orderId);
-        if (order.user_id != userId) {
-            await favoriteRepository.addFavorite(userId, orderId);
+        let orderId = req.params.orderId;
+        let userId = jwt.decode(req.headers.authorization).id;
+        let result = await orderService.makeOrderFavorite(orderId, userId);
+        if (result) {
             res.json({message: "success"});
         } else {
             res.status(500);
@@ -180,10 +122,10 @@ async function addFavorite(req, res) {
 }
 
 async function deleteFavorite(req, res) {
-    let userId = jwt.decode(req.headers.authorization).id;
-    let orderId = req.params.orderId;
     try {
-        await favoriteRepository.deleteFavoriteOrder(userId, orderId);
+        let userId = jwt.decode(req.headers.authorization).id;
+        let orderId = req.params.orderId;
+        await orderService.makeOrderNotFavorite(orderId, userId);
         res.json({message: "success"});
     } catch (err) {
         logger.log(err);
@@ -193,18 +135,10 @@ async function deleteFavorite(req, res) {
 }
 
 async function getUserFavorite(req, res) {
-    let userId = jwt.decode(req.headers.authorization).id;
     try {
-        let orders = await favoriteRepository.getFavoriteOrdersByUserId(userId);
-        let ordersOutput = [];
-        for (let order of orders) {
-            let ordOutput = await orderOutput.getOrderFeedOutput(userId, order);
-            ordersOutput.push(ordOutput);
-        }
-        res.json({
-            items: ordersOutput,
-            nextFrom: ""
-        });
+        let userId = jwt.decode(req.headers.authorization).id;
+        let dto = await orderService.getUserFavoriteOrders(userId);
+        res.json(dto);
     } catch (err) {
         logger.log(err);
         res.status(500);
@@ -213,21 +147,13 @@ async function getUserFavorite(req, res) {
 }
 
 async function search(req, res) {
-    let tags = req.body.tags;
-    let city = req.body.city;
-    let searchString = req.body.searchString;
-    let userId = jwt.decode(req.headers.authorization).id;
     try {
-        let orders = await orderRepository.getOrdersBySearchStringAndTags(searchString, tags, city, userId);
-        let ordersOutput = [];
-        for (let order of orders) {
-            let ordOutput = await orderOutput.getOrderFeedOutput(userId, order);
-            ordersOutput.push(ordOutput);
-        }
-        res.json({
-            items: ordersOutput,
-            nextFrom: ""
-        });
+        let tags = req.body.tags;
+        let city = req.body.city;
+        let searchString = req.body.searchString;
+        let userId = jwt.decode(req.headers.authorization).id;
+        let dto = await orderService.getOrdersSearchDto(userId, searchString, tags, city);
+        res.json(dto);
     } catch (err) {
         logger.log(err);
         res.status(500);

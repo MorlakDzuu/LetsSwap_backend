@@ -1,8 +1,9 @@
 const database = require('../database/database');
+const Deal = require('../domain/Deal');
 
-async function addChange(deal, userId) {
+async function addChange(deal) {
     let data = await database.db.one('INSERT INTO deals (order_id, user_id, comment, status) VALUES ($1, $2, $3, $4) RETURNING id',
-        [deal.orderId, userId, deal.comment, "new"]);
+        [deal.orderId, deal.userId, deal.comment, deal.status]);
     return data.id;
 }
 
@@ -44,7 +45,8 @@ async function canMakeChange(orderId) {
 
 async function getChangeById(dealId) {
     let data = await database.db.one('SELECT * FROM deals WHERE id = $1', [dealId]);
-    return data;
+    let dealEntity = new Deal(data.id, data.user_id, data.order_id, data.comment, data.status);
+    return dealEntity;
 }
 
 async function deleteChange(changeId) {

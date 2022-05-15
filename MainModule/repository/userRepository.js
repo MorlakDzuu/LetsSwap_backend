@@ -1,4 +1,5 @@
 const database = require('../database/database');
+const User = require('../domain/User');
 
 async function register(client) {
     const data = await database.db.one('INSERT INTO users (name, lastname, raiting, swaps_count, phone_number, city) ' +
@@ -14,7 +15,9 @@ async function getUserByLogin(login) {
 
 async function getUserById(id) {
     const user = await database.db.one('SELECT * FROM users WHERE id = $1', [id]);
-    return user;
+    let userEntity = new User(user.id, user.name, user.lastname, user.city, user.swaps_count,
+        user.raiting, user.photo_id, user.phone_number);
+    return userEntity;
 }
 
 async function updateUserName(id, name) {
